@@ -1,0 +1,9 @@
+{
+  "name": "session-forensics",
+  "displayName": "Session Forensics",
+  "version": "0.1.0",
+  "description": "Maintains a running decision digest (.decisions/<session-id>.md) while you work, and merges every digest in a project into one chronological decision log on demand. Windows only.",
+  "keywords": ["decisions", "digest", "changelog", "windows"],
+  "hooks": "./hooks/hooks.json",
+  "defaultEnabled": true
+}

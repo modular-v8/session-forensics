@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    # spec.md: Windows only. This is not a portability check running on a
+    # convenient runner -- it is the only platform this tool claims to support.
+    runs-on: windows-latest
+
+    # Deliberately no `env:` block referencing any secret. There is no path by
+    # which GEMINI_API_KEY or OPENROUTER_API_KEY could reach this job's
+    # environment: not set, not inherited, not referenced -- a paid call from
+    # CI must be impossible, not merely unlikely (tasks.md T6.2).
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # spec.md's floor. CI validates against the floor, not whatever
+          # happens to be convenient, since newer interpreters are a weaker
+          # test of "does this work on what we actually claim to support."
+          python-version: "3.11"
+
+      - name: Compile
+        run: python -m compileall -q src hooks bin tests
+
+      - name: Lint
+        run: |
+          python -m pip install --quiet ruff
+          python -m ruff check --select F,E9 src hooks bin tests
+
+      - name: Smoke test (real fixture, real pipeline, fake provider, no key)
+        run: python tests/ci_smoke.py

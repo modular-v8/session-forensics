@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.ruff_cache/
+
+# Claude Code's own local, machine-specific settings for whoever is working
+# on *this* repository -- unrelated to the plugin this repository ships
+# (that lives in .claude-plugin/, hooks/, bin/, src/). Never portable,
+# never meant to be shared.
+.claude/
+
+# session-forensics' own output, for this repository's own sessions while
+# building it. Self-ignoring via .decisions/.gitignore once the tool creates
+# it; listed here too so a fresh .decisions/ never has a moment of being
+# unignored before the tool's own write gate runs.
+.decisions/
