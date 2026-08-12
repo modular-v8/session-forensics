@@ -24,7 +24,6 @@ CI smoke run. A single script, plain asserts, a non-zero exit on any failure.
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
 import subprocess
