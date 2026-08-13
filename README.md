@@ -203,23 +203,21 @@ they're used as a deterministic fallback whenever no provider is available
   [`VERIFICATION.md`](VERIFICATION.md) rule 1.
 - **Validation scope is one person, one machine, one Claude Code version.**
   Every measurement in `docs/signals.md` and this README comes from that.
-- **Model names and rate limits drift, and this project already got burned by
-  it once.** An earlier hardcoded model name stopped resolving entirely
-  partway through building this and calls hung until timeout instead of
-  failing cleanly — fixed by switching to `gemini-flash-latest`, the
-  provider's own always-current alias, rather than a version string. That
-  alias currently resolves to `gemini-3.6-flash`; it will resolve to
-  something else later. The rate-limit figures in this README are real
-  measurements taken on that day, not a promise about any other day — check
+- **Model names and rate limits drift.** The tool targets
+  `gemini-flash-latest`, the provider's own always-current alias, rather than
+  a pinned version string — it currently resolves to `gemini-3.6-flash` and
+  will resolve to something else later. Check
   `https://ai.dev/rate-limit` for your account's current numbers rather than
   trusting a hardcoded figure here.
 
 ## For contributors
 
-[`spec.md`](spec.md), [`plan.md`](plan.md) and [`tasks.md`](tasks.md) are the
-full design record — outcome, requirements, architecture, decisions and the
-task-by-task build log, including what was measured and what changed as a
-result. [`docs/signals.md`](docs/signals.md) is the measurement record the
-whole design rests on. [`VERIFICATION.md`](VERIFICATION.md) is a checklist
-for judging whether a digest can be trusted, grounded in real failures found
-while building this.
+- [`spec.md`](spec.md), [`plan.md`](plan.md) and [`tasks.md`](tasks.md) are
+  the full design record — outcome, requirements, architecture, decisions
+  and the task-by-task build log, including what was measured and what
+  changed as a result.
+- [`docs/signals.md`](docs/signals.md) is the measurement record the whole
+  design rests on.
+- [`VERIFICATION.md`](VERIFICATION.md) is a checklist for judging whether a
+  digest can be trusted, grounded in real failures found while building
+  this.

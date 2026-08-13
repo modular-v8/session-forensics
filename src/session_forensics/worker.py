@@ -170,6 +170,16 @@ def _apply_update(digest: Digest, delta: Delta, *, cwd: str | None, timestamp: s
     if not delta.is_empty:
         can_call, reason = should_call_provider(digest)
         if can_call:
+            # `should_call_provider` returning True means neither reason is
+            # the *current* blocking condition, regardless of what an earlier
+            # update recorded -- a key can be added mid-session (T4.12), and
+            # SF_CALL_CAP is read fresh each call, so a cap raised mid-session
+            # can un-stick cap_reached too. Cleared here, before the call is
+            # even attempted, so a subsequent provider failure (e.g. a
+            # NetworkError) never leaves a stale "no key configured" line
+            # sitting in the footer next to it.
+            digest.no_key = False
+            digest.cap_reached = False
             try:
                 completion = summarise_with_failover(build_prompt(delta))
             except ProviderError as exc:
