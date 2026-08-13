@@ -35,7 +35,7 @@ from pathlib import Path
 from . import config
 from .repo import repo_root
 
-__all__ = ["should_trigger"]
+__all__ = ["should_trigger", "mark_retry_pending", "clear_retry_pending"]
 
 
 def should_trigger(*, session_id: str, transcript_path: str, cwd: str) -> bool:
@@ -45,6 +45,17 @@ def should_trigger(*, session_id: str, transcript_path: str, cwd: str) -> bool:
     hookrunner has nowhere safe to report a problem, and erring toward
     triggering is the safe direction (a redundant spawn costs little; a
     silently-skipped one costs a stale digest).
+
+    Also triggers unconditionally, regardless of turn/char count, whenever a
+    retryable provider failure is outstanding (`mark_retry_pending`, below) --
+    spec.md's "SHALL retry on the next trigger" means the very next `Stop`,
+    not the next one that also happens to cross the normal threshold. Found
+    directly: a real retryable failure resets nothing about the turn/char
+    counters below (they are a *frequency* heuristic, tracking fires since the
+    last trigger, not the last *successful* one), so without this a failure
+    landing right after a fresh reset could sit unretried for up to another
+    full `SF_TURN_THRESHOLD` turns even though the underlying rate-limit
+    window that caused it is typically sub-minute (tasks.md T4.10).
     """
     try:
         current_size = os.stat(transcript_path).st_size
@@ -55,20 +66,53 @@ def should_trigger(*, session_id: str, transcript_path: str, cwd: str) -> bool:
     state = _read(trigger_path)
     bytes_at_checkpoint = state.get("bytes_at_checkpoint", 0)
     fires_since_checkpoint = state.get("fires_since_checkpoint", 0) + 1
+    pending_failure = bool(state.get("pending_failure", False))
 
     new_bytes = max(0, current_size - bytes_at_checkpoint)
     trigger = (
         state == {}  # no prior baseline at all -- see module docstring
         or fires_since_checkpoint >= config.turn_threshold()
         or new_bytes >= config.char_threshold()
+        or pending_failure
     )
 
+    # `pending_failure` is carried forward either way -- only worker.py, which
+    # actually knows the outcome, clears it (`clear_retry_pending`). Triggering
+    # because of it does not itself mean the resulting worker run will succeed.
     if trigger:
-        _write(trigger_path, {"bytes_at_checkpoint": current_size, "fires_since_checkpoint": 0})
+        _write(trigger_path, {"bytes_at_checkpoint": current_size, "fires_since_checkpoint": 0, "pending_failure": pending_failure})
     else:
-        _write(trigger_path, {"bytes_at_checkpoint": bytes_at_checkpoint, "fires_since_checkpoint": fires_since_checkpoint})
+        _write(trigger_path, {"bytes_at_checkpoint": bytes_at_checkpoint, "fires_since_checkpoint": fires_since_checkpoint, "pending_failure": pending_failure})
 
     return trigger
+
+
+def mark_retry_pending(session_id: str, cwd: str) -> None:
+    """Called by worker.py right after a retryable provider failure. Makes the
+    *next* `should_trigger()` call for this session return `True`
+    unconditionally, so recovery from a short-lived rate-limit window (T4.10:
+    observed sub-minute) happens on the next real `Stop`, typically the user's
+    very next turn -- not gated behind another full threshold's worth of
+    turns/characters. Best-effort, matching this module's existing file I/O:
+    a failure to write here costs one missed fast-retry opportunity, never
+    correctness (worker.py's own checkpoint is unaffected either way).
+    """
+    path = _trigger_path(session_id, cwd)
+    state = _read(path)
+    state["pending_failure"] = True
+    _write(path, state)
+
+
+def clear_retry_pending(session_id: str, cwd: str) -> None:
+    """Called by worker.py after every update that succeeds -- clearing an
+    already-clear flag is a harmless no-op, so callers never need to know
+    whether a failure was actually pending first.
+    """
+    path = _trigger_path(session_id, cwd)
+    state = _read(path)
+    if state.get("pending_failure"):
+        state["pending_failure"] = False
+        _write(path, state)
 
 
 def _trigger_path(session_id: str, cwd: str) -> Path:

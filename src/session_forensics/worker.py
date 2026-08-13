@@ -23,7 +23,7 @@ import time
 import traceback
 from pathlib import Path
 
-from . import config, log, optout
+from . import config, log, optout, threshold
 from .digest.merge import accumulate_session_stats, merge_entries
 from .digest.model import Digest
 from .digest.prompt import ParsedEntry, build_prompt, parse_entries
@@ -325,6 +325,11 @@ def _process_update(
 
     if succeeded:
         session_state.checkpoint_event, session_state.checkpoint_line = delta.range[1], delta.checkpoint_line
+        threshold.clear_retry_pending(digest.session_id, cwd)
+    else:
+        # Makes the *next* Stop for this session trigger unconditionally,
+        # regardless of turn/char threshold -- see threshold.py's docstring.
+        threshold.mark_retry_pending(digest.session_id, cwd)
     state_mod.save(session_state, locate.state_path(decisions_dir, digest.session_id))
 
     status = "succeeded" if succeeded else f"FAILED ({digest.last_error})"

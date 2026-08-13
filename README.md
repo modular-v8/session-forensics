@@ -175,6 +175,21 @@ no sign of firing too often or too rarely. There was nothing in the real data
 pushing either number in either direction, so "measured and confirmed" is
 the honest result here, not "measured and changed."
 
+**Recovery from a rate-limit failure doesn't wait for the normal threshold.**
+If an update fails with a retryable error (rate limit, quota, a provider's
+5xx), the digest records it and, per spec.md, retries "on the next trigger"
+— but that next trigger is the very next `Stop`, unconditionally, not the
+next one that also happens to cross 4 turns / 6,000 characters. Since `Stop`
+fires after every assistant turn, recovery from the short, sub-minute
+rate-limit window measured above typically happens within your next turn or
+two, not after another full threshold's worth of conversation. There's no
+internal sleep-and-retry loop doing this — spec.md requires retrying on the
+next trigger, not inside the worker process, so this is implemented as a
+small per-session flag that forces the next check to fire regardless of
+threshold, cleared again the moment an update actually succeeds. If `Stop`
+doesn't fire for a while (e.g. Claude is mid-tool-use and hasn't yielded a
+turn back yet), recovery waits for that, same as any other update would.
+
 ## Structural signals
 
 Before a model is involved at all, four structural signals are detected

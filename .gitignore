@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .ruff_cache/
+.env
 
 # Claude Code's own local, machine-specific settings for whoever is working
 # on *this* repository -- unrelated to the plugin this repository ships
