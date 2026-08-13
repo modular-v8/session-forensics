@@ -46,12 +46,20 @@ __all__ = [
 # openai/gpt-4o-mini) were reasonable as of this tool's training-cutoff knowledge
 # but had already been superseded by the time of real-world testing -- the Gemini
 # name specifically caused every real call to hang until timeout rather than fail
-# cleanly. `gemini-flash-latest` is Google's own "hot-swapped with every release"
-# alias (confirmed against ai.google.dev's model docs), chosen specifically so
-# this default does not go stale the same way again. `openai/gpt-5-mini` was
-# confirmed live via OpenRouter's own /api/v1/models endpoint at the time of
-# writing. Both remain fully overridable via SF_MODEL_PRIMARY/SF_MODEL_FALLBACK.
-_DEFAULT_MODEL_PRIMARY = "gemini-flash-latest"
+# cleanly. `openai/gpt-5-mini` was confirmed live via OpenRouter's own
+# /api/v1/models endpoint at the time of writing and is unaffected by the change
+# below. Both remain fully overridable via SF_MODEL_PRIMARY/SF_MODEL_FALLBACK.
+#
+# Primary switched to Flash-Lite at T4.15 (post-ship, user-directed): the user's
+# own AI Studio dashboard showed gemini-3.6-flash (what `gemini-flash-latest`
+# resolved to) at 5 RPM against Flash-Lite's 15 RPM / 250k TPM -- directly
+# relevant given T4.10 already found request-rate, not spend, to be this tool's
+# real binding constraint. `gemini-flash-lite-latest` follows the same
+# "hot-swapped with every release" alias convention as `gemini-flash-latest`
+# (confirmed against ai.google.dev's model docs), for the same stale-name
+# reason. Not yet confirmed against a real call the way `gemini-flash-latest`
+# was at T3.9 -- see tasks.md T4.15's open item.
+_DEFAULT_MODEL_PRIMARY = "gemini-flash-lite-latest"
 _DEFAULT_MODEL_FALLBACK = "openai/gpt-5-mini"
 _DEFAULT_TURN_THRESHOLD = 4
 _DEFAULT_CHAR_THRESHOLD = 6000

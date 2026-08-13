@@ -279,6 +279,15 @@ The first phase where anything writes into a repository or runs without being as
   - Refs: spec § in scope (added), plan § Tech Stack
   - Depends on: T4.13
 
+- [ ] **T4.15** *(added post-ship, not in the original plan)* Switch the primary model default from Flash to Flash-Lite.
+  - **Where this came from**: the user reported their own AI Studio dashboard showing `gemini-3.6-flash` (what `gemini-flash-latest` was resolving to) at **5 RPM**, against Flash-Lite's **15 RPM / 250k TPM** — a real, account-sourced figure, and directly relevant since T4.10 already established request-rate, not spend, as this tool's actual binding constraint. Asked for by name: "I want to use this model."
+  - **Change**: `config.py`'s `_DEFAULT_MODEL_PRIMARY` → `gemini-flash-lite-latest` (was `gemini-flash-latest`). Kept the same "-latest alias, never a pinned version" discipline the original default was chosen for at T3.9, for the identical reason — a version string goes stale, an alias doesn't; `gemini-flash-lite-latest` was confirmed to follow Google's documented "-latest alias for every model family" convention via WebSearch/WebFetch against ai.google.dev, the same class of source that confirmed `gemini-flash-latest` originally. `SF_MODEL_PRIMARY` still overrides it for anyone who prefers plain Flash.
+  - **Two things deliberately left open, not silently assumed**:
+    1. **The alias string itself is not yet confirmed against a real call.** This project has been burned by exactly this before (`gemini-2.5-flash` stopped resolving mid-build, T3.9) — confirming a model name from documentation and research is not the same as confirming it from a real response. Cannot test this myself (no key, and the user has kept their key out of chat throughout this project) — asked the user to confirm with their own next real session.
+    2. **Digest content quality on Flash-Lite is unverified.** T3.9's validation gate was run entirely against plain Flash; a "lite" model is a real, plausible quality regression risk for this tool's actual job (telling a decision from a passing remark, narrating a reversal), not just a rate-limit optimisation. Not blocking on this since the user made an informed, explicit choice already, but flagged rather than left implicit — worth a light T3.9-style spot check against a real session if digest quality seems to change.
+  - Refs: tasks.md T4.10 (the request-rate-is-the-real-constraint finding this acts on), T3.9 (the original model-name verification this has not yet repeated)
+  - Depends on: T4.10
+
 **Gate:** the digest updates mid-session on a real run; Ctrl+C leaves a digest covering everything up to the last update; `git status` shows nothing untracked; threshold values come from measurement rather than the guesses in `plan.md`.
 
 ---

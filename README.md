@@ -204,11 +204,13 @@ they're used as a deterministic fallback whenever no provider is available
 - **Validation scope is one person, one machine, one Claude Code version.**
   Every measurement in `docs/signals.md` and this README comes from that.
 - **Model names and rate limits drift.** The tool targets
-  `gemini-flash-latest`, the provider's own always-current alias, rather than
-  a pinned version string — it currently resolves to `gemini-3.6-flash` and
-  will resolve to something else later. Check
-  `https://ai.dev/rate-limit` for your account's current numbers rather than
-  trusting a hardcoded figure here.
+  `gemini-flash-lite-latest`, the provider's own always-current alias for the
+  Flash-Lite line, rather than a pinned version string — switched from plain
+  Flash post-ship (tasks.md T4.15) once a real account showed Flash-Lite at
+  3x the RPM (15 vs. 5) for this tool's workload, which is short factual
+  extraction, not creative writing. Check `https://ai.dev/rate-limit` for
+  your account's current numbers rather than trusting a hardcoded figure
+  here, and `SF_MODEL_PRIMARY` to override if you'd rather use plain Flash.
 
 ## For contributors
 
