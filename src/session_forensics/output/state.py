@@ -102,6 +102,8 @@ def _to_dict(state: SessionState) -> dict:
         "session_ended": d.session_ended,
         "branch": d.branch,
         "compaction_count": d.compaction_count,
+        "ai_title": d.ai_title,
+        "custom_title": d.custom_title,
     }
 
 
@@ -138,6 +140,8 @@ def _from_dict(payload: dict) -> SessionState:
         session_ended=payload.get("session_ended"),
         branch=payload.get("branch"),
         compaction_count=payload.get("compaction_count", 0),
+        ai_title=payload.get("ai_title"),
+        custom_title=payload.get("custom_title"),
     )
     return SessionState(
         digest=digest,

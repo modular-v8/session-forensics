@@ -69,6 +69,13 @@ class Delta:
     session_started: str | None = None
     session_ended: str | None = None
     branch: str | None = None
+    #: Claude Code's own session title, if this delta happens to cover a
+    #: `custom-title`/`ai-title` record (T4.14). `custom_title` -- a title the
+    #: user set themselves -- always wins over `ai_title` when both are
+    #: present; see digest/merge.py::accumulate_session_stats for how these
+    #: fold into the digest across incremental updates.
+    ai_title: str | None = None
+    custom_title: str | None = None
 
     @property
     def is_empty(self) -> bool:
@@ -132,4 +139,6 @@ def _from_transcript(
         session_started=transcript.started,
         session_ended=transcript.ended,
         branch=transcript.branch,
+        ai_title=transcript.ai_title,
+        custom_title=transcript.custom_title,
     )

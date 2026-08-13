@@ -57,6 +57,11 @@ def parse(path: str | Path, *, after_line: int = 0, start_index: int = 0) -> Tra
         out.session_id = out.session_id or record.get("sessionId") or record.get("session_id")
         out.branch = out.branch or record.get("gitBranch")
         out.cwd = out.cwd or record.get("cwd")
+
+        if rtype == "ai-title":
+            out.ai_title = record.get("aiTitle") or out.ai_title
+        elif rtype == "custom-title":
+            out.custom_title = record.get("customTitle") or out.custom_title
         stamp = record.get("timestamp")
         if stamp:
             out.started = out.started or stamp

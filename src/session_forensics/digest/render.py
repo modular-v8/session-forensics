@@ -26,7 +26,7 @@ _SECTION_TITLES = {"decided": "Decided", "rejected": "Rejected", "open": "Open"}
 
 
 def render(digest: Digest) -> str:
-    parts: list[str] = [f"# Session digest: `{digest.session_id}`", "", _strapline(digest)]
+    parts: list[str] = _header(digest) + ["", _strapline(digest)]
 
     if digest.optout:
         parts += ["", _OPTOUT_NOTICE]
@@ -44,6 +44,19 @@ def render(digest: Digest) -> str:
     parts += ["", "---", "", _footer(digest)]
 
     return "\n".join(parts) + "\n"
+
+
+def _header(digest: Digest) -> list[str]:
+    """Claude Code's own session title (T4.14), when one exists, leads the
+    document -- the session id moves to a subtitle line rather than
+    disappearing, since it is still the filename and the stable identifier
+    everything else (state sidecar, lock, threshold file) is keyed on. A
+    session too new to have a title yet (killed after a turn or two, before
+    Claude Code assigns one) falls back to exactly the pre-T4.14 header.
+    """
+    if digest.title:
+        return [f"# {digest.title}", f"_Session `{digest.session_id}`_"]
+    return [f"# Session digest: `{digest.session_id}`"]
 
 
 _EMPTY_STATE = (

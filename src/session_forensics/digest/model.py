@@ -78,6 +78,19 @@ class Digest:
     session_ended: str | None = None
     branch: str | None = None
     compaction_count: int = 0
+    #: Claude Code's own session title (T4.14). See `title` below for the
+    #: effective value -- `custom_title` (a title the user set themselves)
+    #: always wins over `ai_title` (auto-generated) when both are present.
+    ai_title: str | None = None
+    custom_title: str | None = None
 
     def by_section(self, section: str) -> list[Entry]:
         return [e for e in self.entries if e.section == section]
+
+    @property
+    def title(self) -> str | None:
+        """The human-readable name to show for this session, if any is known
+        yet -- `None` for a session too new to have one (falls back to the
+        session id wherever this is displayed).
+        """
+        return self.custom_title or self.ai_title

@@ -3,6 +3,10 @@ __pycache__/
 .ruff_cache/
 .env
 
+# A separate code-analysis tool's own local project config -- not part of
+# this project's source, unrelated to anything it ships.
+.serena/
+
 # Claude Code's own local, machine-specific settings for whoever is working
 # on *this* repository -- unrelated to the plugin this repository ships
 # (that lives in .claude-plugin/, hooks/, bin/, src/). Never portable,

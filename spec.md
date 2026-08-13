@@ -20,6 +20,7 @@ While you work with a coding agent, a short digest of what was decided, what was
 - A per-session API call cap, after which the digest continues from structured facts alone.
 - Distribution as a Claude Code plugin, with a documented manual `settings.json` block.
 - A `.env` file at the repository root as an optional, lower-precedence source for provider keys (config-file support reversed post-ship, see plan.md § Tech Stack — the original "environment variables only" line below no longer holds).
+- The digest header shows Claude Code's own session title (`custom-title`/`ai-title` transcript records) when one exists, in place of the raw session id — added post-ship (tasks.md T4.14) so a digest is identifiable at a glance without decoding a UUID. The **filename stays keyed on the session id**, unchanged: state sidecar, lock file and threshold file are all keyed on it too, and a title can be renamed, be absent early in a session, or collide between two unrelated sessions, none of which a stable identifier can be allowed to do.
 
 ## out of scope
 

@@ -112,6 +112,16 @@ def accumulate_session_stats(digest: Digest, delta: Delta, *, cwd: str | None = 
     if digest.branch is None and delta.branch:
         digest.branch = delta.branch
 
+    # Unlike branch/session_started (set once, sticky), a title can
+    # legitimately be renamed mid-session -- the latest value this delta
+    # happens to carry replaces whatever was recorded before, so a rename
+    # picked up by a later update is reflected, not stuck on the first title
+    # ever seen.
+    if delta.ai_title:
+        digest.ai_title = delta.ai_title
+    if delta.custom_title:
+        digest.custom_title = delta.custom_title
+
 
 def _is_under(path: str, cwd: str) -> bool:
     """True if `path` resolves to somewhere inside `cwd`.

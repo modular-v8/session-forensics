@@ -56,6 +56,13 @@ class Transcript:
     cwd: str | None = None
     started: str | None = None
     ended: str | None = None
+    #: Claude Code's own human-readable session title, if the transcript
+    #: carries one -- `custom-title`/`ai-title` records (T4.14). Unlike
+    #: `branch`/`session_id`, a title can legitimately be renamed mid-session,
+    #: so downstream (`delta.py`, `merge.py`) treats "latest seen" as current,
+    #: not "first seen wins" the way `branch` does.
+    ai_title: str | None = None
+    custom_title: str | None = None
     lines: int = 0
     unparseable: int = 0
     record_types: dict[str, int] = field(default_factory=dict)
