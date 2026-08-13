@@ -5,13 +5,22 @@ time. Hook invocations are separate short-lived processes; a module-level consta
 computed once at import would go stale in exactly the case that matters -- a key
 added, a threshold tuned, between one invocation and the next.
 
-Environment variables only -- a configuration file is out of scope for v1
-(spec.md, out of scope).
+Environment variables, optionally seeded from a `.env` file at the repo root
+(`load_dotenv`, tasks.md T4.12). v1 originally scoped this out (spec.md) in
+favour of a real, persistent OS environment variable -- reversed after direct
+user feedback: `setx` plus a full Claude Code restart is real, reported setup
+friction for a tool whose whole point is minimal ceremony, and most developers
+already have a project `.env` from other tooling. Implemented as a small,
+dependency-free parser rather than adopting `python-dotenv`, keeping this
+project's "standard library only" property intact.
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+from .repo import repo_root
 
 __all__ = [
     "gemini_api_key",
@@ -25,6 +34,7 @@ __all__ = [
     "log_level",
     "section_caps",
     "word_cap",
+    "load_dotenv",
     "LOCK_STALE_SECONDS",
     "PROVIDER_TIMEOUT_SECONDS",
 ]
@@ -120,3 +130,78 @@ def section_caps() -> dict[str, int]:
 
 def word_cap() -> int:
     return _WORD_CAP
+
+
+def load_dotenv(cwd: str | Path) -> str | None:
+    """Best-effort: if `<repo_root>/.env` exists, its ``KEY=value`` pairs are
+    merged into ``os.environ`` for any key not already set there. A real
+    environment variable always wins -- standard dotenv precedence, and it
+    means the original setx-based path keeps working completely unchanged
+    for anyone already using it.
+
+    Returns a warning string if `.env` exists but does not look covered by
+    the repo's own `.gitignore` -- never raises, never blocks; the caller
+    logs it if present. This is a best-effort textual check (an exact-line
+    match on common patterns), not a full `.gitignore` engine -- good enough
+    to catch the one mistake that actually matters here (a key about to be
+    committed), not a general-purpose ignore resolver.
+
+    Call once, early, before any `gemini_api_key`/`openrouter_api_key`
+    lookup -- everything downstream still just reads `os.environ` fresh, so
+    this is the only place `.env` is ever read from.
+    """
+    dotenv_path = repo_root(cwd) / ".env"
+    if not dotenv_path.is_file():
+        return None
+
+    for key, value in _parse_dotenv(dotenv_path).items():
+        os.environ.setdefault(key, value)
+
+    return _warn_if_unprotected(dotenv_path)
+
+
+def _parse_dotenv(path: Path) -> dict[str, str]:
+    """Minimal ``KEY=value`` parsing -- no interpolation, no multi-line
+    values. Blank lines and ``#``-prefixed comments are skipped; an optional
+    leading ``export `` and surrounding matched quotes on the value are
+    stripped, covering the two conventions real `.env` files use in practice
+    without pulling in a dependency for it.
+    """
+    pairs: dict[str, str] = {}
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError:
+        return pairs
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if key:
+            pairs[key] = value
+    return pairs
+
+
+_DOTENV_IGNORE_PATTERNS = {".env", "/.env", ".env*", "/.env*", "*.env"}
+
+
+def _warn_if_unprotected(dotenv_path: Path) -> str | None:
+    gitignore_path = dotenv_path.parent / ".gitignore"
+    try:
+        lines = {ln.strip() for ln in gitignore_path.read_text(encoding="utf-8").splitlines()}
+    except OSError:
+        lines = set()
+    if lines & _DOTENV_IGNORE_PATTERNS:
+        return None
+    return (
+        f"{dotenv_path} does not appear to be covered by {gitignore_path} -- "
+        "add a line for it, or any key(s) in it risk being committed"
+    )

@@ -247,6 +247,9 @@ def run_over_transcript(
     under a typical free-tier RPM ceiling; pass 0 to disable for fake-provider
     tests, where there is no real rate limit to respect.
     """
+    if cwd:
+        config.load_dotenv(cwd)  # CLI recovery/preview path gets the same .env support as the hook
+
     total_lines = claude_code.parse(transcript_path).lines
     digest = Digest(session_id=session_id)
     if total_lines == 0:
@@ -391,7 +394,10 @@ def _process_optout_update(
     )
 
 
-def _run(*, session_id: str, transcript_path: str, cwd: str, fallback_log: Path) -> None:
+def _run(
+    *, session_id: str, transcript_path: str, cwd: str, fallback_log: Path,
+    dotenv_warning: str | None = None,
+) -> None:
     try:
         decisions_dir = locate.locate(cwd)
     except locate.LocateError as exc:
@@ -399,6 +405,8 @@ def _run(*, session_id: str, transcript_path: str, cwd: str, fallback_log: Path)
         return
 
     log_path = decisions_dir / "forensics.log"
+    if dotenv_warning:
+        log.info(log_path, f".env: {dotenv_warning}", session_id=session_id)
     held = lock_mod.acquire(locate.lock_path(decisions_dir, session_id))
     if held is None:
         log.info(log_path, "another worker already holds the lock for this session; exiting", session_id=session_id)
@@ -437,10 +445,14 @@ def run(*, session_id: str, transcript_path: str, cwd: str) -> None:
     """
     fallback_log = Path(tempfile.gettempdir()) / "session_forensics" / f"{session_id}.log"
     try:
+        dotenv_warning = config.load_dotenv(cwd)
         if not Path(transcript_path).is_file():
             log.error(fallback_log, f"transcript not found: {transcript_path}", session_id=session_id)
             return
-        _run(session_id=session_id, transcript_path=transcript_path, cwd=cwd, fallback_log=fallback_log)
+        _run(
+            session_id=session_id, transcript_path=transcript_path, cwd=cwd,
+            fallback_log=fallback_log, dotenv_warning=dotenv_warning,
+        )
     except Exception:
         log.error(fallback_log, f"unhandled exception:\n{traceback.format_exc()}", session_id=session_id)
 

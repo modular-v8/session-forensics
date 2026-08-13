@@ -19,6 +19,7 @@ While you work with a coding agent, a short digest of what was decided, what was
 - A `SKILL.md` that reads existing digests and runs the aggregate, and never writes.
 - A per-session API call cap, after which the digest continues from structured facts alone.
 - Distribution as a Claude Code plugin, with a documented manual `settings.json` block.
+- A `.env` file at the repository root as an optional, lower-precedence source for provider keys (config-file support reversed post-ship, see plan.md § Tech Stack — the original "environment variables only" line below no longer holds).
 
 ## out of scope
 
@@ -27,7 +28,7 @@ While you work with a coding agent, a short digest of what was decided, what was
 - **Forcing a refresh from the skill.** The hook is the only writer. A second write path to the same file is where idempotency bugs live.
 - **Non-Windows platforms.** Deferred to v2.
 - **Transcript formats other than Claude Code's.** The output location and the model call are agent-agnostic; the parser is not.
-- **A configuration file.** Environment variables only in v1.
+- ~~**A configuration file.** Environment variables only in v1.~~ **Reversed post-ship** (tasks.md T4.12): a real, persistent OS environment variable required a `setx` plus a full Claude Code restart, reported directly as real setup friction for a tool meant to need minimal ceremony. `.env` support was added instead — see the in-scope list above and plan.md § Tech Stack for why this didn't mean adopting a dependency.
 - **Retaining the cut heuristics.** Six were cut on measured evidence and are documented in `docs/signals.md` § 5 so they are not re-proposed.
 
 ## users & context
