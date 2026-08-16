@@ -1,5 +1,7 @@
 # session-forensics
 
+![Cover Image](COVER_IMAGE.png)
+
 A running decision digest for coding sessions with Claude Code. While you
 work, a short record of what was decided, what was rejected, and why is kept
 continuously up to date at `.decisions/<session-id>.md`. One command later
